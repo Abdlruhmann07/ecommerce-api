@@ -19,8 +19,16 @@ const signToken = function (user) {
 
 // signing users up
 exports.signUp = catchAsync(async (req, res, next) => {
-  const { name, email, password, dateOfBirth, sex, phoneNumber, photo } =
-    req.body;
+  const {
+    name,
+    email,
+    password,
+    dateOfBirth,
+    sex,
+    phoneNumber,
+    photo,
+    passwordChangedAt,
+  } = req.body;
 
   const newUser = await User.create({
     name,
@@ -30,6 +38,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     sex,
     phoneNumber,
     photo,
+    passwordChangedAt,
   });
   // signing user token
   const token = signToken(newUser);
@@ -66,6 +75,12 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 });
 
+// log out users
+exports.logout = (req, res) => {
+  res.cookie("token", "", { maxAge: 1 });
+  res.redirect("/api/v1/login");
+};
+
 // authentication middleware
 exports.authenticate = catchAsync(async (req, res, next) => {
   //? 1) check if the token exist
@@ -85,6 +100,20 @@ exports.authenticate = catchAsync(async (req, res, next) => {
   const decoded = await promisify(jwt.verify)(token, JWT_SECERET);
   console.log(decoded);
   //? 3) Check if user is still exist
+  const freshUser = await User.findById(decoded.id);
+  if (!freshUser) {
+    return next(
+      new AppError("User belonging to this token dose no loger exist.", 401)
+    );
+  }
   //? 4) Check if user changed his password after login ?
+  if (await freshUser.changePasswordAfter(decoded.iat)) {
+    return next(
+      new AppError("User recently changed password! Please log in!", 401)
+    );
+  }
+  //* Grant access to protected routes..
+  // set user to the req
+  req.user = freshUser;
   next();
 });

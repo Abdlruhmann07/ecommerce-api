@@ -18,10 +18,10 @@ const handleValidationErrorDB = (err) => {
   return new AppError(message, 400);
 };
 // handle JWT errors to be operational errors
-const handleJwtError = (err) =>
+const handleJwtError = () =>
   new AppError("Invalid token , Please log in!", 401);
 // handle JWT expires error
-const handleJwtExpire = (err) =>
+const handleJwtExpire = () =>
   new AppError("Token has expired , Please log in!", 401);
 // sending error to development enviroment
 const sendErrorDev = (err, res) => {
@@ -44,7 +44,7 @@ const sendErrorProd = (err, res) => {
     // Programming errors , Unkown errors: don't leak error details
   } else {
     // 1) log error
-    console.error("ERROR 💥", err.name);
+    console.error("ERROR 💥");
     // 2) send generic message
     res.status(500).json({
       status: "error",
@@ -58,34 +58,21 @@ module.exports = (err, req, res, next) => {
 
   if (process.env.NODE_ENV === "development") {
     sendErrorDev(err, res);
-    // } else if (process.env.NODE_ENV === "production") {
-    //   let error = { ...err };
-
-    //   if (error.name == "CastError") error = handleCastErrorDB(error);
-
-    //   sendErrorProd(err, res);
-    // }
   } else {
     let error = { ...err };
+    // Preserve the message property during shallow copy
+    if (err.message) error.message = err.message;
+    //!
+    if (err.name === "CastError") error = handleCastErrorDB(error);
 
-    if (err.name === "CastError") {
-      error = handleCastErrorDB(error);
-      sendErrorProd(error, res);
-    } else if (err.name === "ValidationError") {
-      console.log("validation");
-      error = handleValidationErrorDB(error);
-      sendErrorProd(error, res);
-    } else if (err.name === "JsonWebTokenError") {
-      error = handleJwtError(error);
-      sendErrorProd(error, res);
-    } else if (err.name === "TokenExpiredError") {
-      error = handleJwtExpire(error);
-      sendErrorProd(error, res);
-    } else if ((error.code = 11000)) {
-      error = handleDublicateDB(error);
-      sendErrorProd(error, res);
-    } else {
-      sendErrorProd(err, res);
-    }
+    if (err.name === "ValidationError") error = handleValidationErrorDB(error);
+
+    if (err.name === "JsonWebTokenError") error = handleJwtError();
+
+    if (err.name === "TokenExpiredError") error = handleJwtExpire();
+
+    if (err.code === 11000) error = handleDublicateDB(error);
+
+    sendErrorProd(error, res);
   }
 };

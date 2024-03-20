@@ -38,6 +38,8 @@ const userSchema = new Schema({
     type: String,
   },
   photo: String,
+
+  passwordChangedAt: Date,
 });
 
 userSchema.pre("save", async function (next) {
@@ -51,6 +53,18 @@ userSchema.methods.comparedHashedPassword = async function (
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.changePasswordAfter = async function (JWTTimeStamp) {
+  if (this.passwordChangedAt) {
+    const changedTimeStamps = Math.floor(
+      this.passwordChangedAt.getTime() / 1000
+    );
+    console.log(JWTTimeStamp < changedTimeStamps);
+    return JWTTimeStamp < changedTimeStamps;
+  }
+
+  return false;
 };
 const User = model("User", userSchema);
 

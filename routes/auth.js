@@ -1,9 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/user");
-const catchAsync = require("../utils/catchAsync");
-const AppError = require("../utils/AppError");
-
 // improting controller middlewares
 const { signUp, login } = require("../controllers/authController");
 // sigin up users
@@ -30,4 +26,7 @@ router.post("/login", login);
 //     });
 //   })
 // );
+router.get("/login", (req, res, next) => {
+    res.render('login')
+});
 module.exports = router;
