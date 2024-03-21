@@ -4,6 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 const CategoryModel = require("../models/category");
 const AdModel = require("../models/Ad");
 
+
 // GET : ALL Users : PRIVATE
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find({});
@@ -77,6 +78,7 @@ exports.postAd = catchAsync(async (req, res, next) => {
 // Get all ads
 exports.getAllAds = catchAsync(async (req, res, next) => {
   // Build Query
+
   // 1A) Filtering
   const queryObj = { ...req.query };
   const excludedFields = ["page", "sort", "limit", "fields"];
